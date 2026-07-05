@@ -83,7 +83,7 @@ function AuthenticatedApp() {
   const handlePageChange = useCallback(
     (page: PageType) => {
       if (page === 'peserta' && !hasPermission('view_participants')) {
-        showToast('Mode viewer hanya dapat melihat dashboard, laporan, filter, dan export laporan', 'warning');
+        showToast('Mode viewer dapat melihat dashboard, data peserta, laporan, filter, dan export laporan', 'warning');
         return;
       }
       if (page === 'users' && !hasPermission('manage_users')) {
@@ -124,7 +124,7 @@ function AuthenticatedApp() {
       if (hasPermission('view_participants')) {
         setActivePage('peserta');
       } else {
-        showToast('Filter sertifikasi diterapkan. Mode viewer tidak membuka detail peserta.', 'info');
+        showToast('Filter sertifikasi diterapkan. Mode viewer dapat melihat data peserta tanpa mengubah data.', 'info');
         setActivePage('dashboard');
       }
     },
@@ -243,6 +243,7 @@ function AuthenticatedApp() {
                   onFilterChange={updateFilters}
                   onResetFilters={resetFilters}
                   getRecordBudget={getRecordBudget}
+                  canEdit={isAdmin}
                 />
               )}
               {activePage === 'sertifikasi' && (

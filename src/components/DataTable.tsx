@@ -18,6 +18,7 @@ interface DataTableProps {
   onEdit: (record: CertificationRecord) => void;
   onDelete: (id: string) => void;
   getBudget?: (record: CertificationRecord) => number;
+  canEdit?: boolean;
 }
 
 const statusConfig: Record<string, { label: string; bg: string; text: string; dot: string }> = {
@@ -52,7 +53,7 @@ function Avatar({ name, className = '' }: { name: string; className?: string }) 
   );
 }
 
-export function DataTable({ data, onEdit, onDelete, getBudget }: DataTableProps) {
+export function DataTable({ data, onEdit, onDelete, getBudget, canEdit = true }: DataTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 25 });
@@ -182,11 +183,11 @@ export function DataTable({ data, onEdit, onDelete, getBudget }: DataTableProps)
           );
         },
       },
-      {
+      ...(canEdit ? [{
         id: 'actions',
         header: '',
         size: 70,
-        cell: ({ row }) => (
+        cell: ({ row }: { row: { original: CertificationRecord } }) => (
           <div className="flex items-center gap-1">
             <button
               onClick={() => onEdit(row.original)}
@@ -204,9 +205,9 @@ export function DataTable({ data, onEdit, onDelete, getBudget }: DataTableProps)
             </button>
           </div>
         ),
-      },
+      }] : []),
     ],
-    [onEdit, onDelete, getBudget]
+    [onEdit, onDelete, getBudget, canEdit]
   );
 
   const table = useReactTable({

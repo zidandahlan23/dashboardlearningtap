@@ -23,7 +23,7 @@ const PERMISSIONS: Record<string, UserRole[]> = {
   view_reports: ['admin', 'viewer'],
   filter_data: ['admin', 'viewer'],
   export_reports: ['admin', 'viewer'],
-  view_participants: ['admin'],
+  view_participants: ['admin', 'viewer'],
   add_data: ['admin'],
   edit_data: ['admin'],
   delete_data: ['admin'],

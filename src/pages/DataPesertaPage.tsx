@@ -16,6 +16,7 @@ interface DataPesertaPageProps {
   onFilterChange: (filters: Partial<FilterState>) => void;
   onResetFilters: () => void;
   getRecordBudget: (record: CertificationRecord) => number;
+  canEdit?: boolean;
 }
 
 const emptyRecord: CertificationRecord = {
@@ -24,7 +25,7 @@ const emptyRecord: CertificationRecord = {
   link_sertifikat: '', computed_status: 'BELUM_SERTIFIKASI', created_at: '', updated_at: '',
 };
 
-export function DataPesertaPage({ records, filterOptions, onUpdateRecord, onDeleteRecord, onAddRecord, filters, onFilterChange, onResetFilters, getRecordBudget }: DataPesertaPageProps) {
+export function DataPesertaPage({ records, filterOptions, onUpdateRecord, onDeleteRecord, onAddRecord, filters, onFilterChange, onResetFilters, getRecordBudget, canEdit = true }: DataPesertaPageProps) {
   const { showToast } = useToast();
   const [editRecord, setEditRecord] = useState<CertificationRecord | null>(null);
   const [deleteRecord, setDeleteRecord] = useState<CertificationRecord | null>(null);
@@ -93,18 +94,18 @@ export function DataPesertaPage({ records, filterOptions, onUpdateRecord, onDele
 
       <section className="bg-white rounded-xl p-4 lg:p-5 shadow-[0px_4px_24px_rgba(60,107,86,0.06)]">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-          <div><h2 className="text-[15px] font-semibold text-[#2C3531]">Kelola Data Sertifikasi</h2><p className="text-[12px] text-[#8A938B] mt-0.5">Filter data, kemudian tambah atau edit record yang perlu diperbarui.</p></div>
-          <div className="flex gap-2"><button onClick={onResetFilters} className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-lg text-[12px] font-medium text-[#566A7F] bg-[#F0F4F1] hover:bg-[#E0E8E3]"><RotateCcw className="w-3.5 h-3.5" /> Reset</button><button onClick={() => setEditRecord({ ...emptyRecord })} className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-lg text-[12px] font-medium text-white bg-[#3D6B56] hover:bg-[#2d5444]"><Plus className="w-4 h-4" /> Tambah Data</button></div>
+          <div><h2 className="text-[15px] font-semibold text-[#2C3531]">Data Peserta & Sertifikat</h2><p className="text-[12px] text-[#8A938B] mt-0.5">Filter data dan buka link sertifikat. Mode viewer hanya dapat melihat dan mengunduh dokumen.</p></div>
+          <div className="flex gap-2"><button onClick={onResetFilters} className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-lg text-[12px] font-medium text-[#566A7F] bg-[#F0F4F1] hover:bg-[#E0E8E3]"><RotateCcw className="w-3.5 h-3.5" /> Reset</button>{canEdit && <button onClick={() => setEditRecord({ ...emptyRecord })} className="inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-lg text-[12px] font-medium text-white bg-[#3D6B56] hover:bg-[#2d5444]"><Plus className="w-4 h-4" /> Tambah Data</button>}</div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
           {filterEntries.map((filter) => <select key={filter.key} value={filters[filter.key]} onChange={(event) => onFilterChange({ [filter.key]: event.target.value })} className="h-10 px-3 rounded-lg border border-[#E0E8E3] text-[12px] text-[#566A7F] bg-white focus:outline-none focus:border-[#3D6B56]"><option value="">{filter.label}</option>{filter.values.map((value) => <option key={value} value={value}>{value.replaceAll('_', ' ')}</option>)}</select>)}
         </div>
       </section>
 
-      <DataTable data={records} onEdit={setEditRecord} onDelete={(id) => setDeleteRecord(records.find((record) => record.id === id) || null)} getBudget={getRecordBudget} />
+      <DataTable data={records} onEdit={setEditRecord} onDelete={(id) => setDeleteRecord(records.find((record) => record.id === id) || null)} getBudget={getRecordBudget} canEdit={canEdit} />
 
-      <EditModal record={editRecord} isOpen={!!editRecord} onClose={() => setEditRecord(null)} onSave={saveRecord} filterOptions={filterOptions} />
-      <DeleteConfirmModal isOpen={!!deleteRecord} onClose={() => setDeleteRecord(null)} onConfirm={() => void confirmDelete()} nama={deleteRecord?.nama || ''} />
+      {canEdit && <EditModal record={editRecord} isOpen={!!editRecord} onClose={() => setEditRecord(null)} onSave={saveRecord} filterOptions={filterOptions} />}
+      {canEdit && <DeleteConfirmModal isOpen={!!deleteRecord} onClose={() => setDeleteRecord(null)} onConfirm={() => void confirmDelete()} nama={deleteRecord?.nama || ''} />}
     </div>
   );
 }
