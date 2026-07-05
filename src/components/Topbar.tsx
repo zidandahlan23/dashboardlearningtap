@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Bell, ChevronDown, Moon, Sun, Menu, LogOut, Shield, Eye } from 'lucide-react';
+import { Search, Bell, ChevronDown, Moon, Sun, Menu, LogOut, Shield, Eye, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import type { CertificationRecord } from '@/types';
 
@@ -12,9 +12,10 @@ interface TopbarProps {
   isDark: boolean;
   onToggleDark: () => void;
   onOpenSidebar: () => void;
+  lastSynced?: Date | null;
 }
 
-export function Topbar({ title, subtitle, searchValue, onSearchChange, expiringRecords, isDark, onToggleDark, onOpenSidebar }: TopbarProps) {
+export function Topbar({ title, subtitle, searchValue, onSearchChange, expiringRecords, isDark, onToggleDark, onOpenSidebar, lastSynced }: TopbarProps) {
   const { user, logout } = useAuth();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -53,6 +54,14 @@ export function Topbar({ title, subtitle, searchValue, onSearchChange, expiringR
           <kbd className="hidden lg:block absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-[#8A938B] bg-white px-1.5 py-0.5 rounded border border-[#E0E8E3]">
             Ctrl K
           </kbd>
+        </div>
+
+        <div className="hidden xl:flex items-center gap-2 px-3 py-2 rounded-lg bg-[#F0F4F1] border border-[#E0E8E3]">
+          <RefreshCw className="w-3.5 h-3.5 text-[#3D6B56]" />
+          <div className="leading-tight">
+            <div className="text-[9px] uppercase font-bold tracking-wider text-[#8A938B]">Last Sync</div>
+            <div className="text-[11px] font-medium text-[#2C3531]">{lastSynced ? lastSynced.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}</div>
+          </div>
         </div>
 
         {/* Notification */}

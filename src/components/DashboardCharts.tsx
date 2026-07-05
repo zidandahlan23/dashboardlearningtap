@@ -29,7 +29,17 @@ export function DashboardCharts({
   complianceRate,
   sudahCount,
   belumCount,
+  records,
 }: DashboardChartsProps) {
+  const topPtData = Object.entries(records.reduce((acc, record) => {
+    const pt = record.pt || 'Tidak diketahui';
+    acc[pt] = (acc[pt] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>))
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 6);
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 lg:gap-4">
       {/* Regional Bar Chart */}
@@ -173,9 +183,7 @@ export function DashboardCharts({
           Top PT - Jumlah Sertifikasi
         </h3>
         <div className="space-y-3">
-          {regionData
-            .sort((a, b) => b.value - a.value)
-            .slice(0, 4)
+          {topPtData
             .map((item, idx) => (
               <div key={item.name} className="flex items-center gap-3">
                 <span className="text-[11px] text-[#8A938B] w-4">{idx + 1}</span>
@@ -188,7 +196,7 @@ export function DashboardCharts({
                     <div
                       className="h-full bg-[#3D6B56] rounded-full transition-all duration-500"
                       style={{
-                        width: `${(item.value / (regionData[0]?.value || 1)) * 100}%`,
+                        width: `${(item.value / (topPtData[0]?.value || 1)) * 100}%`,
                       }}
                     />
                   </div>

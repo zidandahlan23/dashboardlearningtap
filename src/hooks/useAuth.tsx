@@ -1,4 +1,4 @@
-import { createContext, useContext, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 export type UserRole = 'admin' | 'viewer';
 
@@ -11,9 +11,9 @@ export interface User {
 }
 
 interface AuthState {
-  user: User;
+  user: User | null;
   isAuthenticated: boolean;
-  login: (_email: string, _password: string) => boolean;
+  login: (role: UserRole, name?: string) => boolean;
   logout: () => void;
   hasPermission: (action: string) => boolean;
 }
@@ -23,6 +23,7 @@ const PERMISSIONS: Record<string, UserRole[]> = {
   view_reports: ['admin', 'viewer'],
   filter_data: ['admin', 'viewer'],
   export_reports: ['admin', 'viewer'],
+  view_participants: ['admin'],
   add_data: ['admin'],
   edit_data: ['admin'],
   delete_data: ['admin'],
@@ -33,41 +34,70 @@ const PERMISSIONS: Record<string, UserRole[]> = {
   manage_notifications: ['admin'],
 };
 
-const SYSTEM_USER: User = {
-  id: 'sertifik3-admin',
-  name: 'Admin Sertifikasi',
-  email: 'internal-dashboard',
-  role: 'admin',
-  avatar: 'AS',
-};
+const ROLE_STORAGE_KEY = 'sertifik3_current_user';
+
+function createUser(role: UserRole, name?: string): User {
+  if (role === 'admin') {
+    return {
+      id: 'sertifik3-admin',
+      name: name?.trim() || 'Admin Sertifikasi',
+      email: 'admin-dashboard',
+      role: 'admin',
+      avatar: 'AS',
+    };
+  }
+  return {
+    id: 'sertifik3-viewer',
+    name: name?.trim() || 'Viewer Laporan',
+    email: 'viewer-dashboard',
+    role: 'viewer',
+    avatar: 'VW',
+  };
+}
 
 const AuthContext = createContext<AuthState | null>(null);
 
-/**
- * Akses baca/tulis sebenarnya dikontrol server-side oleh Netlify Function.
- * Context ini hanya menjaga kompatibilitas UI lama tanpa password client-side.
- */
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const login = useCallback(() => true, []);
-  const logout = useCallback(() => undefined, []);
-  const hasPermission = useCallback((action: string) => {
-    const allowedRoles = PERMISSIONS[action] || [];
-    return allowedRoles.includes(SYSTEM_USER.role);
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(ROLE_STORAGE_KEY);
+      if (saved) setUser(JSON.parse(saved) as User);
+    } catch {
+      localStorage.removeItem(ROLE_STORAGE_KEY);
+    }
   }, []);
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user: SYSTEM_USER,
-        isAuthenticated: true,
-        login,
-        logout,
-        hasPermission,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
+  const login = useCallback((role: UserRole, name?: string) => {
+    const nextUser = createUser(role, name);
+    setUser(nextUser);
+    localStorage.setItem(ROLE_STORAGE_KEY, JSON.stringify(nextUser));
+    return true;
+  }, []);
+
+  const logout = useCallback(() => {
+    setUser(null);
+    localStorage.removeItem(ROLE_STORAGE_KEY);
+    sessionStorage.removeItem('sertifik3_view_password');
+    sessionStorage.removeItem('sertifik3_admin_password');
+  }, []);
+
+  const hasPermission = useCallback((action: string) => {
+    if (!user) return false;
+    const allowedRoles = PERMISSIONS[action] || [];
+    return allowedRoles.includes(user.role);
+  }, [user]);
+
+  const value = useMemo<AuthState>(() => ({
+    user,
+    isAuthenticated: Boolean(user),
+    login,
+    logout,
+    hasPermission,
+  }), [user, login, logout, hasPermission]);
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

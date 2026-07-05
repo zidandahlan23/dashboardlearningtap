@@ -11,6 +11,7 @@ import { StatistikPage } from '@/pages/StatistikPage';
 import { ExportPage } from '@/pages/ExportPage';
 import { ImportPage } from '@/pages/ImportPage';
 import { UsersPage } from '@/pages/UsersPage';
+import { LoginPage } from '@/pages/LoginPage';
 import { useCertificationData } from '@/hooks/useCertificationData';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { AuthProvider, useAuth } from '@/hooks/useAuth';
@@ -72,13 +73,19 @@ function AuthenticatedApp() {
     addRecord,
     importData,
     getRecordBudget,
+    lastSynced,
   } = useCertificationData();
 
   // Auth
-  const { user, hasPermission } = useAuth();
+  const { user, hasPermission, isAuthenticated, login } = useAuth();
   const isAdmin = user?.role === 'admin';
+
   const handlePageChange = useCallback(
     (page: PageType) => {
+      if (page === 'peserta' && !hasPermission('view_participants')) {
+        showToast('Mode viewer hanya dapat melihat dashboard, laporan, filter, dan export laporan', 'warning');
+        return;
+      }
       if (page === 'users' && !hasPermission('manage_users')) {
         showToast('Anda tidak memiliki akses ke halaman ini', 'warning');
         return;
@@ -114,9 +121,14 @@ function AuthenticatedApp() {
   const handleCertClick = useCallback(
     (certName: string) => {
       updateFilters({ sertifikasi: certName });
-      setActivePage('peserta');
+      if (hasPermission('view_participants')) {
+        setActivePage('peserta');
+      } else {
+        showToast('Filter sertifikasi diterapkan. Mode viewer tidak membuka detail peserta.', 'info');
+        setActivePage('dashboard');
+      }
     },
-    [updateFilters]
+    [updateFilters, hasPermission, showToast]
   );
 
   const expiringRecords = records.filter((r) => r.computed_status === 'EXPIRING_SOON');
@@ -126,6 +138,10 @@ function AuthenticatedApp() {
     { label: 'Dashboard', page: 'dashboard' as PageType },
     { label: config.title, page: activePage },
   ];
+
+  if (!isAuthenticated) {
+    return <LoginPage onLogin={login} />;
+  }
 
   return (
     <div className={`min-h-screen transition-colors ${isDark ? 'dark bg-[#232333]' : 'bg-[#F0F4F1]'}`}>
@@ -138,6 +154,7 @@ function AuthenticatedApp() {
           sudahSertifikasi={kpi.sudahSertifikasi}
           totalRecords={kpi.totalRecords}
           isAdmin={isAdmin}
+          hasPermission={hasPermission}
         />
       </div>
 
@@ -151,6 +168,7 @@ function AuthenticatedApp() {
         isOpen={mobileSidebarOpen}
         onClose={() => setMobileSidebarOpen(false)}
         isAdmin={isAdmin}
+        hasPermission={hasPermission}
       />
 
       {/* Main Content */}
@@ -164,6 +182,7 @@ function AuthenticatedApp() {
           isDark={isDark}
           onToggleDark={toggleDark}
           onOpenSidebar={() => setMobileSidebarOpen(true)}
+          lastSynced={lastSynced}
         />
 
         {/* Breadcrumb */}
@@ -207,6 +226,7 @@ function AuthenticatedApp() {
                   onFilterChange={updateFilters}
                   onResetFilters={resetFilters}
                   records={records}
+                  lastSynced={lastSynced}
                 />
               )}
               {activePage === 'peserta' && (
@@ -232,7 +252,13 @@ function AuthenticatedApp() {
                 />
               )}
               {activePage === 'statistik' && <StatistikPage chartData={chartData} />}
-              {activePage === 'export' && <ExportPage records={filteredRecords.length > 0 ? filteredRecords : records} />}
+              {activePage === 'export' && (
+                <ExportPage
+                  records={filteredRecords.length > 0 ? filteredRecords : records}
+                  allRecords={records}
+                  filterOptions={filterOptions}
+                />
+              )}
               {activePage === 'import' && <ImportPage onImport={importData} />}
               {activePage === 'users' && <UsersPage />}
             </>

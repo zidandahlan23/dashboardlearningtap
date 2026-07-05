@@ -26,6 +26,7 @@ interface SidebarProps {
   sudahSertifikasi: number;
   totalRecords: number;
   isAdmin: boolean;
+  hasPermission?: (action: string) => boolean;
 }
 
 interface MenuItem {
@@ -33,6 +34,7 @@ interface MenuItem {
   label: string;
   icon: typeof LayoutDashboard;
   adminOnly?: boolean;
+  permission?: string;
 }
 
 interface MenuGroup {
@@ -45,27 +47,27 @@ const menuGroups: MenuGroup[] = [
     label: 'MENU UTAMA',
     items: [
       { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { id: 'peserta', label: 'Data Peserta', icon: Users },
-      { id: 'sertifikasi', label: 'Daftar Sertifikasi', icon: Award },
+      { id: 'peserta', label: 'Data Peserta', icon: Users, permission: 'view_participants' },
+      { id: 'sertifikasi', label: 'Daftar Sertifikasi', icon: Award, permission: 'view_reports' },
     ],
   },
   {
     label: 'LAPORAN',
     items: [
-      { id: 'statistik', label: 'Statistik', icon: BarChart3 },
-      { id: 'export', label: 'Export Data', icon: Download },
+      { id: 'statistik', label: 'Statistik', icon: BarChart3, permission: 'view_reports' },
+      { id: 'export', label: 'Export Data', icon: Download, permission: 'export_reports' },
     ],
   },
   {
     label: 'SISTEM',
     items: [
-      { id: 'import', label: 'Import Data', icon: Upload, adminOnly: true },
-      { id: 'users', label: 'User & Role', icon: UserCog, adminOnly: true },
+      { id: 'import', label: 'Import Data', icon: Upload, adminOnly: true, permission: 'upload_excel' },
+      { id: 'users', label: 'User & Role', icon: UserCog, adminOnly: true, permission: 'manage_users' },
     ],
   },
 ];
 
-export function Sidebar({ activePage, onPageChange, complianceRate, sudahSertifikasi, totalRecords, isAdmin }: SidebarProps) {
+export function Sidebar({ activePage, onPageChange, complianceRate, sudahSertifikasi, totalRecords, isAdmin, hasPermission }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -105,7 +107,7 @@ export function Sidebar({ activePage, onPageChange, complianceRate, sudahSertifi
             )}
             <div className="space-y-1">
               {group.items
-                .filter((item) => !item.adminOnly || isAdmin)
+                .filter((item) => (!item.adminOnly || isAdmin) && (!item.permission || !hasPermission || hasPermission(item.permission)))
                 .map((item) => {
                   const isActive = activePage === item.id;
                   const Icon = item.icon;

@@ -27,6 +27,7 @@ interface MobileSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   isAdmin: boolean;
+  hasPermission?: (action: string) => boolean;
 }
 
 interface MenuItem {
@@ -34,6 +35,7 @@ interface MenuItem {
   label: string;
   icon: typeof LayoutDashboard;
   adminOnly?: boolean;
+  permission?: string;
 }
 
 const menuGroups = [
@@ -41,22 +43,22 @@ const menuGroups = [
     label: 'MENU UTAMA',
     items: [
       { id: 'dashboard' as PageType, label: 'Dashboard', icon: LayoutDashboard },
-      { id: 'peserta' as PageType, label: 'Data Peserta', icon: Users },
-      { id: 'sertifikasi' as PageType, label: 'Daftar Sertifikasi', icon: Award },
+      { id: 'peserta' as PageType, label: 'Data Peserta', icon: Users, permission: 'view_participants' },
+      { id: 'sertifikasi' as PageType, label: 'Daftar Sertifikasi', icon: Award, permission: 'view_reports' },
     ],
   },
   {
     label: 'LAPORAN',
     items: [
-      { id: 'statistik' as PageType, label: 'Statistik', icon: BarChart3 },
-      { id: 'export' as PageType, label: 'Export Data', icon: Download },
+      { id: 'statistik' as PageType, label: 'Statistik', icon: BarChart3, permission: 'view_reports' },
+      { id: 'export' as PageType, label: 'Export Data', icon: Download, permission: 'export_reports' },
     ],
   },
   {
     label: 'SISTEM',
     items: [
-      { id: 'import' as PageType, label: 'Import Data', icon: Upload, adminOnly: true },
-      { id: 'users' as PageType, label: 'User & Role', icon: UserCog, adminOnly: true },
+      { id: 'import' as PageType, label: 'Import Data', icon: Upload, adminOnly: true, permission: 'upload_excel' },
+      { id: 'users' as PageType, label: 'User & Role', icon: UserCog, adminOnly: true, permission: 'manage_users' },
     ],
   },
 ];
@@ -70,6 +72,7 @@ export function MobileSidebar({
   isOpen,
   onClose,
   isAdmin,
+  hasPermission,
 }: MobileSidebarProps) {
   // Prevent body scroll when sidebar is open
   useEffect(() => {
@@ -120,7 +123,7 @@ export function MobileSidebar({
               </div>
               <div className="space-y-1">
                 {group.items
-                  .filter((item) => !(item as MenuItem).adminOnly || isAdmin)
+                  .filter((item) => (!(item as MenuItem).adminOnly || isAdmin) && (!(item as MenuItem).permission || !hasPermission || hasPermission((item as MenuItem).permission!)))
                   .map((item) => {
                     const isActive = activePage === item.id;
                     const Icon = item.icon;
