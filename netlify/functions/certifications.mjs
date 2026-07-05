@@ -1,5 +1,6 @@
 const JSON_HEADERS = { 'content-type': 'application/json; charset=utf-8' };
 const WRITE_ACTIONS = new Set(['create', 'update', 'delete', 'bulkCreate']);
+const AUTH_ACTIONS = new Set(['authAdmin']);
 
 function response(payload, status = 200) {
   return new Response(JSON.stringify(payload), { status, headers: JSON_HEADERS });
@@ -74,6 +75,13 @@ export default async (request) => {
       ? { action: new URL(request.url).searchParams.get('action') || 'records' }
       : await request.json();
     const action = String(payload.action || 'records');
+
+    if (AUTH_ACTIONS.has(action)) {
+      if (!isWriteAuthorized(request)) {
+        return response({ success: false, message: 'Password admin tidak valid.' }, 401);
+      }
+      return response({ success: true, role: 'admin', message: 'Login admin berhasil.' });
+    }
 
     if (!isReadAuthorized(request)) {
       return response({ success: false, message: 'Password dashboard tidak valid.' }, 401);

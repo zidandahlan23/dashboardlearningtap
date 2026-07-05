@@ -9,6 +9,47 @@ interface LoginPageProps {
 export function LoginPage({ onLogin }: LoginPageProps) {
   const [role, setRole] = useState<UserRole>('viewer');
   const [name, setName] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleLogin() {
+    setError('');
+
+    if (role === 'viewer') {
+      onLogin('viewer', name);
+      return;
+    }
+
+    const password = adminPassword.trim();
+    if (!password) {
+      setError('Password admin wajib diisi.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const response = await fetch('/.netlify/functions/certifications', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-dashboard-password': password,
+        },
+        body: JSON.stringify({ action: 'authAdmin' }),
+      });
+      const body = await response.json().catch(() => ({}));
+      if (!response.ok || !body.success) {
+        setError(body.message || 'Password admin tidak valid.');
+        return;
+      }
+      sessionStorage.setItem('sertifik3_admin_password', password);
+      onLogin('admin', name);
+    } catch {
+      setError('Tidak dapat memvalidasi password admin. Periksa koneksi atau Netlify Function.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#EDF4EF] via-white to-[#F7EFE0] flex items-center justify-center p-4">
@@ -77,15 +118,37 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             </button>
           </div>
 
+          {role === 'admin' && (
+            <div className="mb-5">
+              <label className="block text-[12px] font-semibold text-[#566A7F] mb-2">Password admin</label>
+              <input
+                type="password"
+                value={adminPassword}
+                onChange={(e) => setAdminPassword(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') void handleLogin(); }}
+                placeholder="Masukkan password admin"
+                className="w-full h-11 rounded-xl border border-[#DDE8E1] px-4 text-[13px] focus:outline-none focus:ring-2 focus:ring-[#3D6B56]/20 focus:border-[#3D6B56]"
+              />
+              <p className="text-[11px] text-[#8A938B] mt-2">Password ini memakai Environment Variable Netlify: DASHBOARD_ADMIN_PASSWORD.</p>
+            </div>
+          )}
+
+          {error && (
+            <div className="mb-4 rounded-xl border border-[#F0C9C1] bg-[#FFF4F2] px-4 py-3 text-[12px] text-[#B94A3E]">
+              {error}
+            </div>
+          )}
+
           <button
-            onClick={() => onLogin(role, name)}
-            className="w-full h-11 rounded-xl bg-[#3D6B56] hover:bg-[#2f5a48] text-white text-[13px] font-semibold transition-colors flex items-center justify-center gap-2"
+            onClick={() => void handleLogin()}
+            disabled={submitting}
+            className="w-full h-11 rounded-xl bg-[#3D6B56] hover:bg-[#2f5a48] disabled:opacity-60 disabled:cursor-not-allowed text-white text-[13px] font-semibold transition-colors flex items-center justify-center gap-2"
           >
             <LockKeyhole className="w-4 h-4" />
-            Masuk sebagai {role === 'admin' ? 'Admin' : 'Viewer'}
+            {submitting ? 'Memvalidasi...' : `Masuk sebagai ${role === 'admin' ? 'Admin' : 'Viewer'}`}
           </button>
           <p className="text-[11px] text-[#8A938B] mt-4 leading-relaxed">
-            Catatan: mode viewer tidak dapat mengubah data. Perubahan data tetap membutuhkan password admin dari Netlify Function.
+            Catatan: Viewer hanya dapat melihat dashboard, laporan, filter, dan export. Admin wajib login dengan password untuk tambah, edit, import, dan hapus data.
           </p>
         </div>
       </div>
